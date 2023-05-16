@@ -1,6 +1,6 @@
-function Y=CalcKron(Datos,QuitarNodo,Matriz)
-for k=1: Datos.N
- for m=1: Datos.N
+function Y=CalcKron(NumeroNodos,QuitarNodo,Matriz)
+for k=1: NumeroNodos
+ for m=1: NumeroNodos
      Y(k,m)=Matriz(k,m)-((Matriz(QuitarNodo,m)*Matriz(k,QuitarNodo))/Matriz(QuitarNodo,QuitarNodo));
  end
 end
