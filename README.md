@@ -4,7 +4,7 @@ Programas para la materia de Analisis de Sistemas de Potencia de la UTP
 By Wall the Fox Black.
 # Modo de uso:
 #### 1. Descargar la funcion en cuestion.
-#### 2. Suba los archivos a /MATLAB Drive **solo si trabaja en la nube**, si no guarde las funciones en la direccion de trabajo.
+#### 2. Suba los archivos a /MATLAB Drive solo si trabaja en la nube, si no guarde las funciones en la direccion de trabajo.
 ## Listo!!
 Ya puede llamar la funcion en su script ej:  Ybus=CalcYbus(Datos)
 ## Recomendaciones:
