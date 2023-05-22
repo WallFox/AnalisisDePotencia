@@ -1,0 +1,5 @@
+function [L,U]=CalcLU(Matriz)
+[U,L,P]=lu(Matriz);
+L=transpose(L);
+U=transpose(U);
+end
