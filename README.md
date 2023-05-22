@@ -8,4 +8,4 @@ By Wall the Fox Black.
 ## Listo!!
 Ya puede llamar la funcion en su script ej:  Ybus=CalcYbus(Datos)
 >## Recomendaciones:
-En la version actual no se espeficica el como trabaja, por ende se recomienda leer el codigo de la funcion para mirar los datos de ingreso.
+>En la version actual no se espeficica el como trabaja, por ende se recomienda leer el codigo de la funcion para mirar los datos de ingreso.
