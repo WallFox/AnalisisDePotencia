@@ -1,0 +1,246 @@
+function Res=NewtonRaphon(Datos,QuitarNodo,tol,iteraMax)
+
+%Crea un archivo .txt donde se vera la solucion al flujo de carga
+informe = fopen('Solucion_Flujo_de_Carga.txt','w'); 
+%
+
+Datos.N=size(Datos.Barras,1); %Numero de nodos original
+
+%
+if QuitarNodo ~= 0
+    Datos.Barras(QuitarNodo,:)=[];
+end
+%
+
+%Calculo de Ybus
+Ybus=CalcYbus(Datos);
+
+if QuitarNodo~=0
+    Ybus=CalcKron(Datos.N,QuitarNodo,Ybus);
+end
+%
+
+%Seleccion de los Nodos P y los Q
+Datos.NNQ=sort(find(Datos.Barras(:,8)==2)); %Nodos PQ 
+Datos.NNP=sort([Datos.NNQ
+                find(Datos.Barras(:,8)==3)]); %[Nodos PQ ; Nodos PV]
+Datos.N=size(Datos.Barras,1); %Numero de nodos
+%
+
+%Informe en el archivo solucion:
+fprintf(informe,'_______________________________\n');
+fprintf(informe,'Numero de nodos P:\n');
+fprintf(informe,'[');
+fprintf(informe,' %1.0f ',Datos.NNP);
+fprintf(informe,']');
+fprintf(informe,'\nNumero de nodos Q:\n');
+fprintf(informe,'[');
+fprintf(informe,' %1.0f ',Datos.NNQ);
+fprintf(informe,']');
+fprintf(informe,'\n_______________________________\n');
+%
+
+% creacion estructura de datos
+Datos.Vn=Datos.Barras(:,6); %Columna de Voltajes
+Datos.An=Datos.Barras(:,7); %Columna de Angulos
+Datos.id=Datos.Barras(:,1); %Identificacion del Nodo
+VolAng=[1:1:size(Datos.Barras,1);transpose(Datos.Vn);transpose(Datos.An)];
+%
+
+%Voltajes y angulos iniciales:
+fprintf(informe,'\n');
+fprintf(informe,'Voltajes y angulos iniciales:\n');
+fprintf(informe,'_______________________________\n\n');
+fprintf(informe,'%7s  %7s  %7s\n','Nodo','Voltaje','Angulo');
+fprintf(informe,'%7g  %7.4g  %7.4g\n',VolAng);
+fprintf(informe,'_______________________________\n\n');
+%
+
+%Configuracion del formato para la Ybus
+c="";
+for i=1 : Datos.N
+    c=c+" %7.5g";
+end
+c=c+" \n";
+%
+
+%Imprimir la Ybus
+fprintf(informe,'\n');
+fprintf(informe,'Ybus:\n');
+fprintf(informe,'_______________________________\n\n');
+fprintf(informe,'Parte Real:\n');
+fprintf(informe,c,real(Ybus));
+fprintf(informe,'\nParte Imaginaria:\n');
+fprintf(informe,c,imag(Ybus));
+fprintf(informe,'_______________________________\n\n');
+%
+
+%En el nodo Slack que en la tabla son tipo 1:
+%Se conoce voltaje y angulo.
+%En los nodos PQ que en la tabla son tipo 2:
+%No se conoce ni voltaje ni angulo.
+%En los nodos PV que en la tabla son tipo 3:
+%No se conoce solo el voltaje.
+
+%Calculo de P y Q programada
+[Pprog,Qprog]=CalcProg(Datos);
+Pg=Datos.Barras(:,2);
+Pd=Datos.Barras(:,4);
+Qg=Datos.Barras(:,3);
+Qd=Datos.Barras(:,5);
+%
+
+%Impresion en el documento
+fprintf(informe,'\n');
+fprintf(informe,'Calculo de P y Q programada:\n');
+fprintf(informe,'P sin el nodo Slack\n');
+fprintf(informe,'Q sin el nodo Slack y los nodos PV\n');
+fprintf(informe,'_______________________________\n\n');
+fprintf(informe,'P_programada = P_generada - P_demandada\n');
+fprintf(informe,'P_Programada = ');
+fprintf(informe,'[');
+fprintf(informe,' %.4g',Pg(Datos.NNP));
+fprintf(informe,'] - ');
+fprintf(informe,'[');
+fprintf(informe,' %.4g',Pd(Datos.NNP));
+fprintf(informe,'] = ');
+fprintf(informe,'[');
+fprintf(informe,' %.4g',Pprog(Datos.NNP));
+fprintf(informe,']');
+fprintf(informe,'\n\nQ_programada = Q_generada - Q_demandada\n');
+fprintf(informe,'Q_Programada = ');
+fprintf(informe,'[');
+fprintf(informe,' %.4g',Qg(Datos.NNQ));
+fprintf(informe,'] - ');
+fprintf(informe,'[');
+fprintf(informe,' %.4g',Qd(Datos.NNQ));
+fprintf(informe,'] = ');
+fprintf(informe,'[');
+fprintf(informe,' %.4g',Qprog(Datos.NNQ));
+fprintf(informe,']');
+fprintf(informe,'\n_______________________________\n\n');
+%
+
+%
+ite=0;
+Datos.error=1e10;
+while Datos.error>=tol
+    
+    %Calculo de P y Q calculada 
+    [Pcal,Qcal]=CalcSneto(Datos.Vn,Datos.An,Ybus);
+    %
+
+    %Impresion en el documento
+    fprintf(informe,'\n');
+    fprintf(informe,'Calculo de P y Q Calculada:\n');
+    fprintf(informe,'P sin el nodo Slack\n');
+    fprintf(informe,'Q sin el nodo Slack y los nodos PV\n');
+    fprintf(informe,'Tambien se puede usar la formula:\n');
+    fprintf(informe,'Sn = Pcal + JQcal = V x (Ybus x V)*\n');
+    fprintf(informe,'Donde V es el vector de voltajes\n');
+    fprintf(informe,'_______________________________\n\n');
+    fprintf(informe,'P_calculada(i) = Sum(abs(Vn(i)*Vn(j)*Ybus(i,j))*cos(angle(An(j)-An(i)+Ybus(i,j))))\n');
+    fprintf(informe,'P_calculada = ');
+    fprintf(informe,'[');
+    fprintf(informe,' %.4g',Pcal(Datos.NNP));
+    fprintf(informe,']');
+    fprintf(informe,'\n\nQ_calculada(i) = Sum(abs(Vn(i)*Vn(j)*Ybus(i,j))*sin(angle(An(j)-An(i)+Ybus(i,j))))\n');
+    fprintf(informe,'Q_Programada = ');
+    fprintf(informe,'[');
+    fprintf(informe,' %.4g',Qcal(Datos.NNQ));
+    fprintf(informe,']');
+    fprintf(informe,'\n_______________________________\n\n');
+    %
+
+    %Calculo de DP y DQ
+    DP=Pprog(Datos.NNP)-Pcal(Datos.NNP);
+    DQ=Qprog(Datos.NNQ)-Qcal(Datos.NNQ);
+    DE=[DP;DQ];
+    Datos.error=max(abs(DE));
+    %
+
+    %Impresion en el documento
+    fprintf(informe,'\n');
+    fprintf(informe,'Calculo de DP, DQ y DE:\n');
+    fprintf(informe,'DP = P_programada - P_calculada\n');
+    fprintf(informe,'DQ = Q_programada - Q_calculada\n');
+    fprintf(informe,'DE = [DP ; DQ]\n');
+    fprintf(informe,'_______________________________\n\n');
+    fprintf(informe,'DP = ');
+    fprintf(informe,'[');
+    fprintf(informe,' %.4g',DP);
+    fprintf(informe,']');
+    fprintf(informe,'\nDQ = ');
+    fprintf(informe,'[');
+    fprintf(informe,' %.4g',DQ);
+    fprintf(informe,']');
+    fprintf(informe,'\nDE = ');
+    fprintf(informe,'[');
+    fprintf(informe,' %.4g',DE);
+    fprintf(informe,']');
+    fprintf(informe,'\n\nError = max(abs(DE))\n');
+    fprintf(informe,'Error = ');
+    fprintf(informe,' %.4g',Datos.error);
+    fprintf(informe,'\n_______________________________\n\n');
+    %
+
+    if ite>=iteraMax || Datos.error<=tol
+        break
+    else
+        %Calculo de la Jacobiana Reducida
+        JacRed=CalcJacobiano(Datos,Ybus,Pcal,Qcal);
+        %
+
+        %Impresion en el documento 
+
+        %
+
+        %Calculo de los DAngulo y DVoltaje
+        DX=JacRed\DE;
+        %
+
+        %Actualizacion de las variables de estado
+        for n=1:size(Datos.NNP)
+            Datos.An(Datos.NNP(n))=Datos.An(Datos.NNP(n))+DX(n);
+        end
+
+        for n=1:size(Datos.NNQ)
+            Datos.Vn(Datos.NNQ(n))=Datos.Vn(Datos.NNQ(n))*(1+DX(size(Datos.NNP,1)+n));
+        end
+        %
+    end
+    ite=ite+1;
+end
+%
+
+%
+fprintf(informe,'\n');
+fprintf(informe,'Numero de iteraciones\n');
+fprintf(informe,'_______________________________\n\n');
+fprintf(informe,'%d',ite);
+%
+
+% 
+Vbus=Datos.Vn.*exp(1i*Datos.An);
+Ibus=Ybus*Vbus;
+[IAng,IMag]=cart2pol(real(Ibus),imag(Ibus));
+% 
+
+Res.Ybus=Ybus;
+Res.Pprog=Pprog(Datos.NNP);
+Res.Qprog=Qprog(Datos.NNQ);
+Res.Pcal=Pcal(Datos.NNP);
+Res.Qcal=Qcal(Datos.NNQ);
+Res.JacRed=JacRed;
+Res.DP=DP;
+Res.DQ=DQ;
+Res.DE=DE;
+Res.Error=Datos.error;
+Res.DX=DX;
+Res.Vbus=[Datos.Vn Datos.An*(180/pi)];
+Res.iter=i;
+Res.Sn=Pcal+1i*Qcal;
+Res.Ibus=[IMag IAng*(180/pi)];
+Res.Ploss=sum(Vbus.*conj(Ibus));
+fclose(informe);
+end
