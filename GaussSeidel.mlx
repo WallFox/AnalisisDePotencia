@@ -1,0 +1,92 @@
+function Res=GaussSeidel(Datos,QuitarNodo,tol,iteraMax,alpha)
+
+format shortG
+
+% Archivo solucion al flujo de carga
+informe = fopen('Solucion_Flujo_de_Carga.txt','w','s'); 
+%
+
+Datos.N=size(Datos.Barras,1); % Numero de nodos original
+
+%
+if QuitarNodo ~= 0
+    Datos.Barras(QuitarNodo,:)=[];
+end
+%
+
+% Calculo de Ybus
+Ybus=CalcYbus(Datos);
+
+if QuitarNodo~=0
+    Ybus=CalcKron(Datos.N,QuitarNodo,Ybus);
+end
+%
+
+%Voltajes en el punto inicial
+Datos.Vn=Datos.Barras(:,6); %Columna de Voltajes
+Datos.Vitera=Datos.Vn; %Voltaje que cambia por iteracion
+Datos.N=size(Datos.Barras,1); %Numero de nodos
+%
+
+%
+ite=0;
+Datos.error=1e10;
+while Datos.error>=tol
+    
+    %Analisis nodo a nodo
+    for n=1 : Datos.N
+        if Datos.Barras(n,8)==1
+            Datos.Vitera(n)=Datos.Barras(n,6); %Si es Slack se deja quieto
+        elseif Datos.Barras(n,8)==3 %Si es PV: Hay que calcular Q generado
+            Sd_n= Datos.Barras(n,4) + 1i*Datos.Barras(n,5);
+            Qg_n= -imag(conj(Sd_n)  + conj(Datos.Vitera(n)) * Ybus(n,:) * Datos.Vitera);
+            Sg_n= Datos.Barras(n,2) + 1i*Qg_n;
+            Sn  = Sg_n - Sd_n;
+            Vaux_pv = (1/Ybus(n,n)) * ((conj(Sn)/conj(Datos.Vitera(n))) - Ybus(n,:) * Datos.Vitera + Ybus(n,n) * Datos.Vitera(n));
+            Datos.An = angle(Vaux_pv);%Extraer el angulo por este metodo omite usar la formula de correccion
+            Datos.Vitera(n) = abs(Datos.Vitera(n))*exp(1i*Datos.An);
+        else %Si es PQ: Se procede normal
+            Sd_n= Datos.Barras(n,4) + 1i*Datos.Barras(n,5);
+            Sg_n= Datos.Barras(n,2) + 1i*Datos.Barras(n,3);
+            Sn  = Sg_n - Sd_n;
+            Datos.Vitera(n) = (1/Ybus(n,n)) * ((conj(Sn)/conj(Datos.Vitera(n))) - Ybus(n,:) * Datos.Vitera + Ybus(n,n) * Datos.Vitera(n));
+            if alpha~=0
+                Datos.Vitera(n) = Datos.Vn(n) + alpha*(Datos.Vitera(n) - Datos.Vn(n));
+            end
+        end
+    end
+    Datos.error=max(abs(abs(Datos.Vitera)-abs(Datos.Vn)));
+    if ite>=iteraMax || Datos.error<=tol
+        break
+    else
+        Datos.Vn=Datos.Vitera;
+    end
+    ite=ite+1;
+end
+
+%
+fprintf(informe,'\n');
+fprintf(informe,'Numero de iteraciones\n');
+fprintf(informe,'_______________________________\n\n');
+fprintf(informe,'%d',ite);
+fprintf(informe,'\n');
+%
+
+%
+fprintf(informe,'\n');
+fprintf(informe,'Voltajes y angulos solucion:\n');
+fprintf(informe,'_______________________________\n\n');
+fprintf(informe,'%7s  %7s  %7s\n','Nodo','Voltaje','Angulo');
+for n=1: Datos.N
+    fprintf(informe,'%7d  %7.4g  %7.4g\n',n,abs(Datos.Vitera(n)),angle(Datos.Vitera(n))*180/pi);
+end
+fprintf(informe,'_______________________________\n');
+%
+
+%
+Res.Ybus=Ybus;
+Res.ite=ite;
+%
+
+fclose(informe);
+end

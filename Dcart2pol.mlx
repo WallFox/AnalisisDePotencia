@@ -1,0 +1,6 @@
+function [Mag,Ang,Disp]=Dcart2pol(NumComplx)
+[TH,R]=cart2pol(real(NumComplx),imag(NumComplx));
+Mag=R;
+Ang=TH*(180/pi);
+Disp=[Mag Ang];
+end

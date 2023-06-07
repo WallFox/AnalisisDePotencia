@@ -1,0 +1,7 @@
+function Vabc=Va012toVabc(Va012)
+a=exp(1i*deg2rad(120));
+A=[1  1    1
+   1  a^2  a
+   1  a    a^2];
+Vabc=A*Va012;
+end

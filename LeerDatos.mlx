@@ -1,0 +1,4 @@
+function Datos=LeerDatos(Archivo,RangoLineas,RangoBarras)
+Datos.Lineas=xlsread(Archivo,RangoLineas);
+Datos.Barras=xlsread(Archivo,2,RangoBarras);
+end

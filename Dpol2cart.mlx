@@ -1,0 +1,6 @@
+function [Real,Imag,Disp]=Dpol2cart(NumPol)
+[X,Y]=pol2cart(deg2rad(NumPol(2)),NumPol(1));
+Real=X;
+Imag=Y;
+Disp=X+1i*Y;
+end
