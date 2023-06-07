@@ -1,0 +1,3 @@
+function Vabc=Vabc(VABCN,Vabcn)
+Vabc=VABCN-Vabcn;
+end

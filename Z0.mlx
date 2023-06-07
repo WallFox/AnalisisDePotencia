@@ -1,0 +1,3 @@
+function Z_0=Z0(Zaa,Zab,Znn,Zan)
+Z_0=Zaa+2*Zab+3*Znn-6*Zan;
+end

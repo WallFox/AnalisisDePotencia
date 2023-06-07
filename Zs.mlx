@@ -1,0 +1,3 @@
+function Zs=Zs(Zaa,Znn,Zan)
+Zs=Zaa+Znn-2*Zan;
+end

@@ -1,0 +1,5 @@
+function Zsm=Zsm(Zs,Zm)
+Zsm=[Zs Zm Zm
+     Zm Zs Zm
+     Zm Zm Zs];
+end

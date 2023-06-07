@@ -1,0 +1,3 @@
+function Z1=Z1(Zaa,Zab)
+Z1=Zaa-Zab;
+end

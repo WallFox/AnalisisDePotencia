@@ -1,0 +1,3 @@
+function Zm=Zm(Zab,Znn,Zan)
+Zm=Zab+Znn-2*Zan;
+end
